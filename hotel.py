@@ -5,68 +5,110 @@ from tkinter import messagebox
 conn = sqlite3.connect("hotel.db")
 cursor = conn.cursor()
 
+def agregar_habitacion():
+    try:
+        cursor.execute("INSERT INTO habitaciones (id, tipo, numero, precio) VALUES (?, ?, ?, ?)",
+                       (id_hab.get(), tipo_hab.get(), numero_hab.get(), precio_hab.get()))
+        conn.commit()
+        messagebox.showinfo("Éxito", "Habitación agregada correctamente")
+        limpiar_habitaciones()
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo agregar la habitación{e}")
+
+def agregar_reserva():
+    try:
+        cursor.execute("INSERT INTO reserva (id, nombre, dni, fecha, habitaciones) VALUES (?, ?, ?, ?, ?)",
+                       (id_res.get(), nombre_res.get(), dni_res.get(), fecha_res.get(), hab_res.get()))
+        conn.commit()
+        messagebox.showinfo("Éxito", "Reserva agregada correctamente")
+        limpiar_reservas()
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo agregar la reserva{e}")
+
+def mostrar_reservas_habitaciones():
+    try:
+        cursor.execute("""
+            SELECT r.nombre, r.dni, r.fecha, h.tipo, h.numero, h.precio
+            FROM reserva r
+            INNER JOIN habitaciones h ON r.habitaciones = h.id
+        """)
+        filas = cursor.fetchall()
+        if not filas:
+            messagebox.showinfo("Resultados", "No hay reservas cargadas todavía")
+        else:
+            resultado = ""
+            for fila in filas:
+                resultado += f"Cliente: {fila[0]} | DNI: {fila[1]} | Fecha: {fila[2]} | Habitación: {fila[3]} N°{fila[4]} | Precio: ${fila[5]}"
+            messagebox.showinfo("Reservas con habitaciones", resultado)
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo realizar el INNER JOIN{e}")
+
+def limpiar_habitaciones():
+    id_hab.set("")
+    tipo_hab.set("")
+    numero_hab.set("")
+    precio_hab.set("")
+
+def limpiar_reservas():
+    id_res.set("")
+    nombre_res.set("")
+    dni_res.set("")
+    fecha_res.set("")
+    hab_res.set("")
+
 ventana = Tk()
 ventana.title("Sistema de Reservas de Hotel")
-ventana.geometry("550x550")
+ventana.geometry("600x500")
 
-hab_tipo = StringVar()
-hab_numero = StringVar()
-hab_precio = StringVar()
+id_hab = StringVar()
+tipo_hab = StringVar()
+numero_hab = StringVar()
+precio_hab = StringVar()
 
-res_nombre = StringVar()
-res_dni = StringVar()
-res_fecha = StringVar()
-res_habitaciones = StringVar()
+id_res = StringVar()
+nombre_res = StringVar()
+dni_res = StringVar()
+fecha_res = StringVar()
+hab_res = StringVar()
 
-def alta_habitacion():
-    try:
-        conn.execute("INSERT INTO habitaciones (tipo, numero, precio) VALUES (?,?,?)",
-                     (hab_tipo.get(), hab_numero.get(), float(hab_precio.get())))
-        conn.commit()
-        messagebox.showinfo("OK", "Habitación guardada")
-        hab_tipo.set(""); hab_numero.set(""); hab_precio.set("")
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
 
-def alta_reserva():
-    try:
-        conn.execute("INSERT INTO reserva (nombre, dni, fecha, habitaciones) VALUES (?,?,?,?)",
-                     (res_nombre.get(), res_dni.get(), res_fecha.get(), int(res_habitaciones.get())))
-        conn.commit()
-        messagebox.showinfo("OK", "Reserva guardada")
-        res_nombre.set(""); res_dni.set(""); res_fecha.set(""); res_habitaciones.set("")
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
+frame_hab = LabelFrame(ventana, text="Habitaciones", padx=10, pady=10)
+frame_hab.pack(fill="both", expand="yes", padx=20, pady=10)
 
-def mostrar_join():
-    cursor.execute("""
-    SELECT reserva.id, nombre, dni, fecha, habitaciones.numero, habitaciones.tipo, habitaciones.precio
-    FROM reserva
-    INNER JOIN habitaciones ON reserva.habitaciones = habitaciones.id
-    """)
-    filas = cursor.fetchall()
-    texto = ""
-    for f in filas:
-        texto += f"Reserva {f[0]} - Cliente: {f[1]}, DNI: {f[2]}, Fecha: {f[3]}, Habitación: {f[4]} ({f[5]}) ${f[6]}\n"
-    if texto == "":
-        texto = "No hay reservas registradas."
-    messagebox.showinfo("Reservas con Habitaciones", texto)
+Label(frame_hab, text="ID").grid(row=0, column=0)
+Entry(frame_hab, textvariable=id_hab).grid(row=0, column=1)
 
-marco = Frame(ventana, padx=10, pady=10, bd=5, relief=SOLID)
-marco.pack(side=TOP, fill=X)
-Label(marco, text="Alta Habitación").pack()
-Entry(marco, textvariable=hab_tipo, justify="center").pack()
-Entry(marco, textvariable=hab_numero, justify="center").pack()
-Entry(marco, textvariable=hab_precio, justify="center").pack()
-Button(marco, text="Guardar Habitación", command=alta_habitacion).pack()
+Label(frame_hab, text="Tipo").grid(row=1, column=0)
+Entry(frame_hab, textvariable=tipo_hab).grid(row=1, column=1)
 
-Label(marco, text="Alta Reserva").pack()
-Entry(marco, textvariable=res_nombre, justify="center").pack()
-Entry(marco, textvariable=res_dni, justify="center").pack()
-Entry(marco, textvariable=res_fecha, justify="center").pack()
-Entry(marco, textvariable=res_habitaciones, justify="center").pack()
-Button(marco, text="Guardar Reserva", command=alta_reserva).pack()
+Label(frame_hab, text="Número").grid(row=2, column=0)
+Entry(frame_hab, textvariable=numero_hab).grid(row=2, column=1)
 
-Button(marco, text="Mostrar Reservas con Habitaciones", command=mostrar_join).pack()
+Label(frame_hab, text="Precio").grid(row=3, column=0)
+Entry(frame_hab, textvariable=precio_hab).grid(row=3, column=1)
+
+Button(frame_hab, text="Agregar Habitación", command=agregar_habitacion).grid(row=4, column=0, columnspan=2, pady=5)
+
+
+frame_res = LabelFrame(ventana, text="Reservas", padx=10, pady=10)
+frame_res.pack(fill="both", expand="yes", padx=20, pady=10)
+
+Label(frame_res, text="ID").grid(row=0, column=0)
+Entry(frame_res, textvariable=id_res).grid(row=0, column=1)
+
+Label(frame_res, text="Nombre").grid(row=1, column=0)
+Entry(frame_res, textvariable=nombre_res).grid(row=1, column=1)
+
+Label(frame_res, text="DNI").grid(row=2, column=0)
+Entry(frame_res, textvariable=dni_res).grid(row=2, column=1)
+
+Label(frame_res, text="Fecha").grid(row=3, column=0)
+Entry(frame_res, textvariable=fecha_res).grid(row=3, column=1)
+
+Label(frame_res, text="ID Habitación").grid(row=4, column=0)
+Entry(frame_res, textvariable=hab_res).grid(row=4, column=1)
+
+Button(frame_res, text="Agregar Reserva", command=agregar_reserva).grid(row=5, column=0, columnspan=2, pady=5)
+Button(ventana, text="Mostrar Reservas con Habitaciones", command=mostrar_reservas_habitaciones, bg="lightblue").pack(pady=20)
+
 ventana.mainloop()
-conn.close()
